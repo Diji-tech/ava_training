@@ -21,21 +21,34 @@ print("keras.__version__=",keras.__version__)
 os.environ['CUDA_DEVICES_VISIBLE'] = '1'
 
 
-def train_generator(img_path, label_path):
+def train_generator(img_path, label_path, num_limit=1000):
     images = []
     labels = []
+    pics_per_category = {}
 
     for labels_file in glob.glob('{}/*.jpgl'.format(label_path)):
+        label_name = os.path.basename(labels_file).split("_")[0]
+
+        # check the total pic numbers with same category
+        pic_nums = pics_per_category.setdefault(label_name, num_limit)
+        if pic_nums <= 0:
+            continue
+
         with open(labels_file, "r") as _fp:
-            label_name = os.path.basename(labels_file).split("_")[0]
             for _line in _fp:
                 _line = _line.strip()
                 if _line =="" or _line == None:
                     continue
                 image_path = "{}/{}.jpg".format(img_path, _line)
                 if os.path.exists(image_path):
+                    # add the existed image with right label.
                     images.append(os.path.realpath(image_path))
                     labels.append(label_name)
+                    # check the num_limit condition.
+                    pics_per_category[label_name] -= 1
+                    print("label_name", pics_per_category[label_name])
+                    if pics_per_category[label_name] <= 0:
+                        break
         pass
     return images, labels
 
