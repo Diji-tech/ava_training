@@ -33,8 +33,8 @@ def train_generator(img_path, label_path, num_limit=1000):
         label_name = os.path.basename(labels_file).split("_")[0]
 
         # check the total pic numbers with same category
-        pic_nums = pics_per_category.setdefault(label_name, num_limit)
-        if pic_nums <= 0:
+        pic_nums = pics_per_category.setdefault(label_name, 0)
+        if pic_nums >= num_limit:
             continue
 
         with open(labels_file, "r") as _fp:
@@ -49,11 +49,11 @@ def train_generator(img_path, label_path, num_limit=1000):
                     images.append(image)
                     labels.append(label_name)
                     # check the num_limit condition.
-                    pics_per_category[label_name] -= 1
-                    print("label_name", pics_per_category[label_name])
-                    if pics_per_category[label_name] <= 0:
+                    pics_per_category[label_name] += 1
+                    if pics_per_category[label_name] >= num_limit:
                         break
         pass
+    print(">>> loading dataset = ", pics_per_category)
     return images, labels
 
 

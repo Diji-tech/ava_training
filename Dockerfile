@@ -42,7 +42,19 @@ RUN sudo -E apt-get install -y --no-install-recommends \
         git \    
         curl \
         vim \
-        less
+        less \
+        ffmpeg \
+        libsm6 \
+        libxext6
 
 # See http://bugs.python.org/issue19846
 ENV LANG C.UTF-8
+
+RUN python3 -m pip --no-cache-dir install --upgrade \
+    "pip<20.3" \
+    setuptools
+
+RUN python3 -m pip --no-cache-dir install \
+    scikit-learn \
+    opencv-python \
+    matplotlib
