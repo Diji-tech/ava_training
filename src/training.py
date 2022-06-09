@@ -1,6 +1,8 @@
 import os
 import glob
 import numpy as np
+import pickle
+import matplotlib.pyplot as plt
 
 import tensorflow as tf
 import keras
@@ -69,8 +71,9 @@ def main():
     (image_train, image_test, label_train, label_test) = train_test_split(images, labels, test_size=0.25, random_state=42)
 
     # one-hot 编码
-    label_train = LabelBinarizer().fit_transform(label_train)
-    label_test = LabelBinarizer().fit_transform(label_test)
+    lb = LabelBinarizer()
+    label_train = lb.fit_transform(label_train)
+    label_test = lb._transform(label_test)
 
     # 数据生成器处理
     data_generator = ImageDataGenerator(rotation_range=30, width_shift_range=0.1,
@@ -83,17 +86,38 @@ def main():
     model = keras.applications.resnet50.ResNet50(input_shape = shape, weights=None, classes=classes)
     model.compile(optimizer="adam", loss="categorical_crossentropy", metrics=["accuracy"])
 
+    BS = 30
+    EPOCHS = 30
+
     # 训练模型
     # training = model.fit(image_train, label_train, epochs=30, batch_size=6)
-    training = model.fit_generator(data_generator(image_train, label_train, batch_size = 6),
-            validation_data = (image_test, label_test), steps_per_epoch=len(image_train) // 6,
-            epochs=30 )
+    training = model.fit_generator(data_generator(image_train, label_train, batch_size = BS),
+            validation_data = (image_test, label_test), steps_per_epoch=len(image_train) // BS,
+            epochs=EPOCHS )
 
      # 评估模型
-    model.evaluate(image_test, label_test, batch_size=32)
+    model.evaluate(image_test, label_test, batch_size=BS)
+
+    # 绘制结果曲线
+    N = np.arange(0, EPOCHS)
+    plt.style.use("ggplot")
+    plt.figure()
+    plt.plot(N, training.history["loss"], label="train_loss")
+    plt.plot(N, training.history["val_loss"], label="val_loss")
+    plt.plot(N, training.history["accuracy"], label="train_acc")
+    plt.plot(N, training.history["val_accuracy"], label="val_acc")
+    plt.title("Training Loss and Accuracy")
+    plt.xlabel("Epoch #")
+    plt.ylabel("Loss/Accuracy")
+    plt.legend()
+    plt.savefig('./output/training.png')
  
     # 把训练好的模型保存到文件
-    model.save('resnet_ava_classification.h5')
+    print("------ Saving model -------")
+    model.save('./output/resnet_ava_classification.model')
+    l_file = open("./output/resnet_ava_classification.pickle", "wb")
+    l_file.write(pickle.dumps(lb))
+    l_file.close()
 
 
 if __name__ == '__main__':
