@@ -3,6 +3,7 @@ import glob
 import numpy as np
 import pickle
 import matplotlib.pyplot as plt
+import cv2
 
 import tensorflow as tf
 import keras
@@ -44,7 +45,8 @@ def train_generator(img_path, label_path, num_limit=1000):
                 image_path = "{}/{}.jpg".format(img_path, _line)
                 if os.path.exists(image_path):
                     # add the existed image with right label.
-                    images.append(os.path.realpath(image_path))
+                    image = cv2.imread(os.path.realpath(image_path))
+                    images.append(image)
                     labels.append(label_name)
                     # check the num_limit condition.
                     pics_per_category[label_name] -= 1
