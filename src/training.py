@@ -21,15 +21,16 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 
 print("keras.__version__=",keras.__version__)
-os.environ['CUDA_DEVICES_VISIBLE'] = '1'
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
-
-def train_generator(img_path, label_path, num_limit=1000):
+def train_generator(img_path, label_path, num_limit=500):
     images = []
     labels = []
     pics_per_category = {}
 
     for labels_file in glob.glob('{}/*.jpgl'.format(label_path)):
+        if "test" in labels_file or "generic" in labels_file:
+            continue
         label_name = os.path.basename(labels_file).split("_")[0]
 
         # check the total pic numbers with same category
@@ -46,6 +47,7 @@ def train_generator(img_path, label_path, num_limit=1000):
                 if os.path.exists(image_path):
                     # add the existed image with right label.
                     image = cv2.imread(os.path.realpath(image_path))
+                    image = cv2.resize(image, (256, 256))
                     images.append(image)
                     labels.append(label_name)
                     # check the num_limit condition.
@@ -66,6 +68,7 @@ def main():
     print("load data successfully")
 
     # 对图像数据做scale处理
+    print("images shape : ", images[0].shape)
     images = np.array(images, dtype="float") / 255.0
     labels = np.array(labels)
 
@@ -75,25 +78,25 @@ def main():
     # one-hot 编码
     lb = LabelBinarizer()
     label_train = lb.fit_transform(label_train)
-    label_test = lb._transform(label_test)
+    label_test = lb.fit_transform(label_test)
 
     # 数据生成器处理
     data_generator = ImageDataGenerator(rotation_range=30, width_shift_range=0.1,
         height_shift_range=0.1, shear_range=0.2, zoom_range=0.2,
         horizontal_flip=True, fill_mode="nearest")
-    # 输入图片为256x256，9个分类
-    shape, classes = (256, 256, 3), 9
+    # 输入图片为256x256，8个分类
+    shape, classes = (256, 256, 3), 8
  
     # 调用keras的ResNet50模型
-    model = keras.applications.resnet50.ResNet50(input_shape = shape, weights=None, classes=classes)
+    model = tf.keras.applications.resnet50.ResNet50(input_shape = shape, weights=None, classes=classes)
     model.compile(optimizer="adam", loss="categorical_crossentropy", metrics=["accuracy"])
 
-    BS = 30
-    EPOCHS = 30
+    BS = 6
+    EPOCHS = 50
 
     # 训练模型
     # training = model.fit(image_train, label_train, epochs=30, batch_size=6)
-    training = model.fit_generator(data_generator(image_train, label_train, batch_size = BS),
+    training = model.fit_generator(data_generator.flow(image_train, label_train, batch_size = BS),
             validation_data = (image_test, label_test), steps_per_epoch=len(image_train) // BS,
             epochs=EPOCHS )
 
